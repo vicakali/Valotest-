@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valorant Strat Roulette</title>
+    <style>
+        /* Valorant-inspiriertes Farbschema */
+        :root {
+            --valo-red: #ff4655;
+            --valo-dark: #11141a;
+            --valo-gray: #1f2326;
+            --valo-light: #ece8e1;
+            --valo-accent: #0f1923;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--valo-dark);
+            color: var(--valo-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--valo-gray);
+            border: 1px solid rgba(236, 232, 225, 0.1);
+            border-top: 4px solid var(--valo-red);
+            padding: 40px;
+            border-radius: 4px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            font-weight: 800;
+        }
+
+        h1 span {
+            color: var(--valo-red);
+        }
+
+        /* Roulette Ausgabebereich */
+        .display-area {
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            padding: 20px;
+            border: 1px dashed rgba(236, 232, 225, 0.1);
+        }
+
+        .agent-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.4s ease;
+        }
+
+        .agent-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .agent-img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background-color: var(--valo-accent);
+            border: 2px solid var(--valo-red);
+            margin-bottom: 10px;
+            object-fit: cover;
+        }
+
+        .agent-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--valo-red);
+        }
+
+        .challenge-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            font-style: italic;
+            max-width: 90%;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease 0.2s; /* Leicht verzögert */
+        }
+
+        .challenge-text.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .placeholder-text {
+            color: rgba(236, 232, 225, 0.4);
+            font-size: 1.1rem;
+        }
+
+        /* Der Button */
+        .btn-spin {
+            background-color: var(--valo-red);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(255, 70, 85, 0.4);
+        }
+
+        .btn-spin:hover {
+            background-color: #ff5c69;
+            transform: translateY(-2px);
+        }
+
+        .btn-spin:disabled {
+            background-color: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Animation für das "Rollen" */
+        @keyframes blurRoll {
+            0% { filter: blur(0px); }
+            50% { filter: blur(3px); opacity: 0.6; }
+            100% { filter: blur(0px); }
+        }
+
+        .rolling {
+            animation: blurRoll 0.15s infinite;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: rgba(236, 232, 225, 0.3);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1><span>VALORANT</span> Roulette</h1>
+        
+        <div class="display-area" id="displayArea">
+            <div class="placeholder-text" id="placeholder">Klicke auf den Button für deine Challenge!</div>
+            
+            <div class="agent-container" id="agentContainer">
+                <img src="" alt="Agent" class="agent-img" id="agentImg">
+                <div class="agent-name" id="agentName">-</div>
+            </div>
+            
+            <div class="challenge-text" id="challengeText">-</div>
+        </div>
+
+        <button class="btn-spin" id="spinBtn">Zufall auswürfeln</button>
+    </div>
+
+    <div class="footer">
+        Fan-Projekt. Bilder bereitgestellt durch valorant-api.com.
+    </div>
+
+    <script>
+        // 1. Daten-Pools (Erweitere die Challenges nach Belieben!)
+        const agentsPool = [
+            { name: "Jett", uuid: "add6443a-41bd-e414-f6ad-e58d267f4e11" },
+            { name: "Phoenix", uuid: "117ed9e3-49f3-6512-3ccf-00a02380d816" },
+            { name: "Sage", uuid: "56434418-436e-43ef-0301-625cef509033" },
+            { name: "Sova", uuid: "320b2a48-4d9b-a075-31f1-1027457de4a0" },
+            { name: "Omen", uuid: "8e253930-4c05-31dd-1b6c-968525494517" },
+            { name: "Reyna", uuid: "a3cbd9a5-4db9-2459-f14d-47d51755294e" },
+            { name: "Raze", uuid: "f94c3b30-42be-e959-889c-b72d773b4010" },
+            { name: "Killjoy", uuid: "1e58de9c-403d-4361-9d2d-0407b4b3b9f4" },
+            { name: "Cypher", uuid: "115c6535-44a3-f6d7-8a9a-26b9a3a1e236" },
+            { name: "Viper", uuid: "707eab51-4836-f488-046a-cda6bf494859" },
+            { name: "Brimstone", uuid: "9f0d74cd-42b6-f300-2dec-e15912e8bb2a" },
+            { name: "Breach", uuid: "5f8d3a7f-467b-97f3-062c-13acf203c002" },
+            { name: "Skye", uuid: "6f2a04ca-43e0-be11-177b-5c85e9d5218d" },
+            { name: "Yoru", uuid: "7f94d12c-423e-67a0-c7cc-e89a374cfa19" },
+            { name: "Astra", uuid: "447595aa-4346-1c15-fd20-359f40fe0271" },
+            { name: "KAY/O", uuid: "601dbbe7-43ce-be57-2a40-4bbc2436531d" },
+            { name: "Chamber", uuid: "22697a3d-45bf-8dd7-4fec-84a9e28c69d7" },
+            { name: "Neon", uuid: "bb2a4828-46eb-3cd1-e765-158f334c9c15" },
+            { name: "Fade", uuid: "deadf12c-42eb-67a0-c7cc-e89a374cfa19" },
+            { name: "Gekko", uuid: "e370fa57-4757-3604-36a7-a8ac64a5b463" },
+            { name: "Iso", uuid: "1db62105-47e9-2ef2-e544-70bc3132e4d9" },
+            { name: "Clove", uuid: "cc8b0c87-44df-dd29-9921-9ebfb9893a8c" }
+        ];
+
+        const challengesPool = [
+            "Du darfst in dieser Runde NUR schleichen (Shift dauerhaft halten).",
+            "Klicke vor JEDEM Schuss einmal kurz mit der rechten Maustaste.",
+            "Kauf jede Runde die teuerste Waffe, die dein Geld erlaubt - kein Sparen!",
+            "Nutze deine Fähigkeiten (Abilities) sofort in den ersten 10 Sekunden der Runde.",
+            "Du darfst dich beim Schießen nicht ducken. Jedes Ducken kostet dich 5 Kniebeugen nach dem Match.",
+            "Kauf in jeder Kaufphase eine 'Shorty' und hole mindestens einen Kill damit.",
+            "Du bist der persönliche Bodyguard des Top-Fraggers. Weiche nicht von seiner Seite.",
+            "Deine Ultimate muss sofort eingesetzt werden, sobald sie bereit ist.",
+            "Du darfst nur Waffen von eliminierten Gegnern oder Teammates benutzen. Starte mit Classic."
+        ];
+
+        // 2. HTML-Elemente holen
+        const spinBtn = document.getElementById('spinBtn');
+        const placeholder = document.getElementById('placeholder');
+        const agentContainer = document.getElementById('agentContainer');
+        const agentImg = document.getElementById('agentImg');
+        const agentName = document.getElementById('agentName');
+        const challengeText = document.getElementById('challengeText');
+        const displayArea = document.getElementById('displayArea');
+
+        // 3. Roulette Logik beim Klick
+        spinBtn.addEventListener('click', () => {
+            spinBtn.disabled = true; // Spam-Schutz
+
+            // Altes Ergebnis ausblenden
+            placeholder.style.display = 'none';
+            agentContainer.classList.remove('active');
+            challengeText.classList.remove('active');
+            
+            // Blur-Animation starten
+            displayArea.classList.add('rolling');
+
+            // Ein kleines "Glücksrad-Flackern" simulieren (1 Sekunde lang)
+            let counter = 0;
+            const interval = setInterval(() => {
+                const randomAgent = agentsPool[Math.floor(Math.random() * agentsPool.length)];
+                agentName.innerText = randomAgent.name;
+                agentImg.src = `https://media.valorant-api.com/agents/${randomAgent.uuid}/displayicon.png`;
+                
+                counter++;
+                if (counter > 10) { // Stoppt nach 10 Wechseln
+                    clearInterval(interval);
+                    
+                    // Finale Auswahl treffen
+                    const finalAgent = agentsPool[Math.floor(Math.random() * agentsPool.length)];
+                    const finalChallenge = challengesPool[Math.floor(Math.random() * challengesPool.length)];
+                    
+                    // Ins HTML eintragen
+                    agentName.innerText = finalAgent.name;
+                    agentImg.src = `https://media.valorant-api.com/agents/${finalAgent.uuid}/displayicon.png`;
+                    challengeText.innerText = `"${finalChallenge}"`;
+                    
+                    // Animation beenden & Resultat einblenden
+                    displayArea.classList.remove('rolling');
+                    agentContainer.classList.add('active');
+                    challengeText.classList.add('active');
+                    
+                    spinBtn.disabled = false;
+                }
+            }, 100); 
+        });
+    </script>
+</body>
+</html>
